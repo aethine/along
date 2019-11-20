@@ -1,0 +1,83 @@
+function readSet(path) {
+    return {
+        name: `${path}`,
+        categories: {
+            cata: {
+                catc: {
+                    _usedby: ['term2'],
+                    _parent: 'cata'
+                },
+                _usedby: ['term1', 'term2']
+            },
+            catb: {
+                _usedby: []
+            }
+        },
+        terms: {
+            term1: {
+                content: 'This is Term 1',
+                categories: ['cata']
+            },
+            term2: {
+                content: 'This is term 2',
+                categories: ['cata', 'catc']
+            }
+        }
+    }
+}
+function parseSetPath(set, path) {
+    let p = path
+    if (path.startsWith('/')) p = p.substr(1)
+
+    const paths = p.split('/')
+    if (!set.categories.keys().includes(paths[0]))
+        return `Could not find the category "${paths[0]}"`
+    switch (paths.length) {
+        case 1:
+            return [paths[0]]
+        case 2:
+            if (!set.categories.keys().includes(paths[1]))
+                return `Could not find the category "${paths[1]}"`
+            return [paths[0], paths[1]]
+        default: return 'Unexpected extra /(s)'
+    }
+}
+function formatCategory(category, prefix) {
+    let result = ''
+    for (const key in category) {
+        if (!key.startsWith('_')) {
+            let sub = formatCategory(category[key], prefix + '|    ')
+            if (sub == '')
+                result += `${prefix}| ${key}\n    `
+            else
+                result += `${prefix}| ${key}\n    ${sub}\n   `
+        }
+    }
+    return result
+}
+function formatTerm(term) {
+    return `[${term.categories.join(', ')}]: "${term.content}" `
+}
+function formatSet(set) {
+    let categories = ''
+    for (const cat in set.categories) {
+        categories += `| ${cat}\n    ${formatCategory(set.categories[cat], '|    ')}`
+    }
+    let terms = ''
+    for (const term in set.terms) {
+        terms += `| ${term} ${formatTerm(set.terms[term])}\n    `
+    }
+
+    return `
+    "${set.name}":
+    CATEGORIES
+    ${categories}
+    TERMS
+    ${terms}
+    `.trim()
+}
+
+module.exports = {
+    read: readSet,
+    format: formatSet
+}

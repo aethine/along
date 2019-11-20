@@ -1,4 +1,5 @@
-const args = require('yargs')
+const SetManager = require('./src/set.js')
+require('yargs')
     .command({
         command: 'study <set> [cfg]',
         alias: ['s', 'st'],
@@ -37,6 +38,16 @@ const args = require('yargs')
         desc: 'Creates a new template within a set',
         handler: argv => {
 
+        }
+    })
+    .command({
+        command: 'test <name>',
+        desc: 't',
+        handler: argv => {
+
+            const set = SetManager.read(argv.name)
+            const str = SetManager.format(set)
+            console.log(str)
         }
     })
     .demandCommand(1, 'Please specify a command. Use the --help argument to get help.')
