@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/aethine/along/issues"
   },
-  "homepage": "https://github.com/aethine/along#readme"
+  "homepage": "https://github.com/aethine/along#readme",
+  "dependencies": {
+    "yargs": "^15.0.2"
+  }
 }
