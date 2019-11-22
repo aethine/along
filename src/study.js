@@ -64,10 +64,6 @@ function parseFilter(cfg) {
     return words
 }
 function transformFilter(parsed) { //todo
-    let list = []
-    let current = []
-    let expectString = false
-
     const lastKey = () => {
         if (current.length == 0) return false
         if (!current[current.length - 1].str) return current[current.length - 1].word
@@ -77,6 +73,9 @@ function transformFilter(parsed) { //todo
         list.push(current)
         current = []
     }
+    const tryNewLine = () => {
+        if (generators.includes(lastKey())) pushCurrent()
+    }
     const nGenerators = ['body', 'category'] //generators that dont expect a string
     const sGenerators = ['choose'] //generators that expect a string
     const nSelectors = ['and'] //selectors that dont expect a string
@@ -84,6 +83,11 @@ function transformFilter(parsed) { //todo
     const generators = nGenerators.concat(sGenerators)
     const selectors = nSelectors.concat(sSelectors)
     const keys = generators.concat(selectors)
+
+    let list = []
+    let current = []
+    let expectString = false
+
     for (const p of parsed) {
         if (p.str) {
             if (expectString) {
@@ -95,13 +99,14 @@ function transformFilter(parsed) { //todo
         else {
             if (expectString) return `Expected string after ${current[current.length - 1].word}`
             if (!keys.includes(p.word)) return `Unknown keyword ${p.word}`
-            if (nGenerators.includes(p.word)) {
-                if (generators.includes(lastKey())) pushCurrent()
-            }
+
+            if (nGenerators.includes(p.word)) tryNewLine()
             else {
                 if (sGenerators.includes(lastKey())) pushCurrent()
-                else if (!nSelectors.includes(p.word))
+                else if (!nSelectors.includes(p.word)) {
+                    tryNewLine()
                     expectString = true
+                }
             }
             current.push(p)
         }
@@ -111,7 +116,9 @@ function transformFilter(parsed) { //todo
     return list
 }
 function createFilterObjects(set, list) {
+    for (const line of list) {
 
+    }
 }
 function createFilter(set, cfg) { //todo
     let parsed = parseFilter(cfg)
