@@ -45,7 +45,7 @@ require('yargs')
         command: 'test <par>',
         desc: 't',
         handler: argv => {
-            console.log(StudyManager.parse(argv.par))
+            console.log(StudyManager.transform(argv.par))
         }
     })
     .demandCommand(1, 'Please specify a command. Use the --help argument to get help.')

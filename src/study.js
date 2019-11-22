@@ -66,31 +66,63 @@ function parseFilter(cfg) {
 function transformFilter(parsed) { //todo
     let list = []
     let current = []
+    let expectString = false
 
     const lastKey = () => {
-        if (current[current.length - 1].str) return current[current.length - 1].word
+        if (current.length == 0) return false
+        if (!current[current.length - 1].str) return current[current.length - 1].word
         else return current[current.length - 2].word
     }
+    const pushCurrent = () => {
+        list.push(current)
+        current = []
+    }
+    const nGenerators = ['body', 'category'] //generators that dont expect a string
+    const sGenerators = ['choose'] //generators that expect a string
+    const nSelectors = ['and'] //selectors that dont expect a string
+    const sSelectors = ['from', 'with'] //selectors that expect a string
+    const generators = nGenerators.concat(sGenerators)
+    const selectors = nSelectors.concat(sSelectors)
+    const keys = generators.concat(selectors)
     for (const p of parsed) {
         if (p.str) {
-            if (current.length > 0 && !current[current.length - 1].str) {
+            if (expectString) {
                 current.push(p)
+                expectString = false
             }
             else return `Unexpected string '${p.word}'`
         }
         else {
-
+            if (expectString) return `Expected string after ${current[current.length - 1].word}`
+            if (!keys.includes(p.word)) return `Unknown keyword ${p.word}`
+            if (nGenerators.includes(p.word)) {
+                if (generators.includes(lastKey())) pushCurrent()
+            }
+            else {
+                if (sGenerators.includes(lastKey())) pushCurrent()
+                else if (!nSelectors.includes(p.word))
+                    expectString = true
+            }
+            current.push(p)
         }
     }
+    if (expectString) return 'Expected a string at end of statement'
+    pushCurrent()
+    return list
+}
+function createFilterObjects(set, list) {
 
 }
 function createFilter(set, cfg) { //todo
     let parsed = parseFilter(cfg)
     let filter = transformFilter(parsed)
     if (filter instanceof String) return filter
+    let objects = createFilterObjects(set, filter)
+    if (objects instanceof String) return objects
     return term => term
 }
 
 module.exports = {
-    parse: parseFilter
+    parse: parseFilter,
+    transform: (cfg) => transformFilter(parseFilter(cfg))
 }
