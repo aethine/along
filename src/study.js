@@ -65,11 +65,23 @@ function parseFilter(cfg) {
 }
 function transformFilter(parsed) { //todo
     let list = []
-    let current = {
-        cfg: [],
-        ask: []
+    let current = []
+
+    const lastKey = () => {
+        if (current[current.length - 1].str) return current[current.length - 1].word
+        else return current[current.length - 2].word
     }
-    let currentwords = []
+    for (const p of parsed) {
+        if (p.str) {
+            if (current.length > 0 && !current[current.length - 1].str) {
+                current.push(p)
+            }
+            else return `Unexpected string '${p.word}'`
+        }
+        else {
+
+        }
+    }
 
 }
 function createFilter(set, cfg) { //todo
