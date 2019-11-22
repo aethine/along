@@ -42,6 +42,27 @@ function parseSetPath(set, path) {
         default: return 'Unexpected extra /(s)'
     }
 }
+function findCategory(set, name) {
+    const search = (cat) => {
+        for (const key in cat) {
+            if (key == name) return cat[key]
+            else {
+                const sub = search(cat[key])
+                if (sub) return sub
+            }
+        }
+    }
+    for (const key in set.categories) {
+        if (key == name) return set.categories[key]
+        else {
+            const sub = search(cat[key])
+            if (sub) return sub
+        }
+    }
+}
+
+
+
 function formatCategory(category, prefix) {
     let result = ''
     for (const key in category) {

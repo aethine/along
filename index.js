@@ -1,4 +1,5 @@
 const SetManager = require('./src/set.js')
+const StudyManager = require('./src/study.js')
 require('yargs')
     .command({
         command: 'study <set> [cfg]',
@@ -41,13 +42,10 @@ require('yargs')
         }
     })
     .command({
-        command: 'test <name>',
+        command: 'test <par>',
         desc: 't',
         handler: argv => {
-
-            const set = SetManager.read(argv.name)
-            const str = SetManager.format(set)
-            console.log(str)
+            console.log(StudyManager.parse(argv.par))
         }
     })
     .demandCommand(1, 'Please specify a command. Use the --help argument to get help.')
