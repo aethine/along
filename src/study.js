@@ -103,7 +103,7 @@ function transformFilter(parsed) {
 
             if (nGenerators.includes(p.word)) tryNewLine()
             else {
-                if (sGenerators.includes(lastKey())) pushCurrent()
+                if (p.word != 'and' && sGenerators.includes(lastKey())) pushCurrent()
                 else if (!nSelectors.includes(p.word)) {
                     tryNewLine()
                     expectString = true
@@ -124,17 +124,25 @@ function createFilterObjects(list) {
     //     choose: ['y']
     // }],
     // generators: ['body', 'category']
-    let from = []
-    let currentFrom = []
-    let wth = [{
-        select: '',
-        choose: []
-    }]
-    let generators = []
-    let lastKey = ''
-    let isAnd = false
-    let expectString = false
+    let from, currentFrom, wth, generators, lastKey, isAnd, expectString
+    const setValues = () => {
+        from = []
+        currentFrom = []
+        wth = [{
+            select: '',
+            choose: []
+        }]
+        generators = []
+        lastKey = ''
+        isAnd = false
+        expectString = false
+    }
+    const pushFrom = () => {
+        if (currentFrom.length > 0)
+            from.push(currentFrom)
+    }
     for (const line of list) {
+        setValues()
         for (const el of line) {
             if (expectString) {
                 switch (lastKey) {
@@ -144,8 +152,7 @@ function createFilterObjects(list) {
                             isAnd = false
                         }
                         else {
-                            if (currentFrom.length > 0)
-                                from.push(currentFrom)
+                            pushFrom()
                             currentFrom = [el.word]
                         }
                         break
@@ -170,30 +177,18 @@ function createFilterObjects(list) {
                 if (el.word == 'and')
                     isAnd = true
                 else {
+                    if (lastKey == 'and') isAnd = false
                     lastKey = el.word
-                    isAnd = false
                 }
-
             }
         }
+        pushFrom()
         objects.push({
             from,
-            with: wth,
+            with: wth[0].select != '' ? wth : [],
             generators
         })
-        from = []
-        currentFrom = []
-        wth = [{
-            select: '',
-            choose: []
-        }]
-        generators = []
-        lastKey = ''
-        isAnd = false
-        expectString = false
-
     }
-
     return objects
 }
 function createFilter(set, cfg) { //todo
