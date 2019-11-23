@@ -1,3 +1,11 @@
+const nGenerators = ['body', 'category'] //generators that dont expect a string
+const sGenerators = ['choose'] //generators that expect a string
+const nSelectors = ['and'] //selectors that dont expect a string
+const sSelectors = ['from', 'with'] //selectors that expect a string
+const generators = nGenerators.concat(sGenerators)
+const selectors = nSelectors.concat(sSelectors)
+const keys = generators.concat(selectors)
+
 function createStudyEngine(set, cfg) {
     const filter = createFilter(set, cfg)
     let terms = []
@@ -63,7 +71,7 @@ function parseFilter(cfg) {
     push()
     return words
 }
-function transformFilter(parsed) { //todo
+function transformFilter(parsed) {
     const lastKey = () => {
         if (current.length == 0) return false
         if (!current[current.length - 1].str) return current[current.length - 1].word
@@ -76,13 +84,6 @@ function transformFilter(parsed) { //todo
     const tryNewLine = () => {
         if (generators.includes(lastKey())) pushCurrent()
     }
-    const nGenerators = ['body', 'category'] //generators that dont expect a string
-    const sGenerators = ['choose'] //generators that expect a string
-    const nSelectors = ['and'] //selectors that dont expect a string
-    const sSelectors = ['from', 'with'] //selectors that expect a string
-    const generators = nGenerators.concat(sGenerators)
-    const selectors = nSelectors.concat(sSelectors)
-    const keys = generators.concat(selectors)
 
     let list = []
     let current = []
@@ -115,21 +116,96 @@ function transformFilter(parsed) { //todo
     pushCurrent()
     return list
 }
-function createFilterObjects(set, list) {
+function createFilterObjects(list) {
+    let objects = []
+    // from: [['a', 'b'], ['c'], ['d']], //a and b c d
+    // with: [{
+    //     select: 'x',
+    //     choose: ['y']
+    // }],
+    // generators: ['body', 'category']
+    let from = []
+    let currentFrom = []
+    let wth = [{
+        select: '',
+        choose: []
+    }]
+    let generators = []
+    let lastKey = ''
+    let isAnd = false
+    let expectString = false
     for (const line of list) {
+        for (const el of line) {
+            if (expectString) {
+                switch (lastKey) {
+                    case 'from':
+                        if (isAnd) {
+                            currentFrom.push(el.word)
+                            isAnd = false
+                        }
+                        else {
+                            if (currentFrom.length > 0)
+                                from.push(currentFrom)
+                            currentFrom = [el.word]
+                        }
+                        break
+                    case 'with':
+                        if (wth[wth.length - 1].select != '') {
+                            wth.push({ select: '', choose: [] })
+                        }
+                        wth[wth.length - 1].select = el.word
+                        break
+                    case 'choose':
+                        if (wth[wth.length - 1].select == '') return 'The \'choose\' keyword requires a \'with\' keyword'
+                        else wth[wth.length - 1].choose.push(el.word)
+                        break
+                }
+                expectString = false
+            }
+            else {
+                if (nGenerators.includes(el.word))
+                    generators.push(el.word)
+                if (sGenerators.concat(sSelectors).includes(el.word))
+                    expectString = true
+                if (el.word == 'and')
+                    isAnd = true
+                else {
+                    lastKey = el.word
+                    isAnd = false
+                }
+
+            }
+        }
+        objects.push({
+            from,
+            with: wth,
+            generators
+        })
+        from = []
+        currentFrom = []
+        wth = [{
+            select: '',
+            choose: []
+        }]
+        generators = []
+        lastKey = ''
+        isAnd = false
+        expectString = false
 
     }
+
+    return objects
 }
 function createFilter(set, cfg) { //todo
     let parsed = parseFilter(cfg)
     let filter = transformFilter(parsed)
     if (filter instanceof String) return filter
-    let objects = createFilterObjects(set, filter)
+    let objects = createFilterObjects(filter)
     if (objects instanceof String) return objects
     return term => term
 }
 
 module.exports = {
     parse: parseFilter,
-    transform: (cfg) => transformFilter(parseFilter(cfg))
+    objects: (cfg) => createFilterObjects(transformFilter(parseFilter(cfg)))
 }
