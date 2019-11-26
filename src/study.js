@@ -1,3 +1,5 @@
+const Set = require('./set.js')
+
 const nGenerators = ['body', 'category'] //generators that dont expect a string
 const sGenerators = ['choose'] //generators that expect a string
 const nSelectors = ['and'] //selectors that dont expect a string
@@ -25,6 +27,7 @@ function studyEngine(engine, study) {
     if (engine.iter < 5 && active.length > 0) {
         study(engine.active)
         engine.iter = engine.iter + 1
+        return engine
     }
     else {
         engine.complete = engine.complete.concat(engine.active)
@@ -34,8 +37,8 @@ function studyEngine(engine, study) {
             engine.terms.push(el)
         }
         iter = 0
+        return studyEngine(engine, study)
     }
-    return engine
 }
 function parseFilter(cfg) {
     let words = []
@@ -192,12 +195,67 @@ function createFilterObjects(list) {
     return objects
 }
 function createFilter(set, cfg) { //todo
-    let parsed = parseFilter(cfg)
-    let filter = transformFilter(parsed)
+    const parsed = parseFilter(cfg)
+    const filter = transformFilter(parsed)
     if (filter instanceof String) return filter
-    let objects = createFilterObjects(filter)
+    const objects = createFilterObjects(filter)
     if (objects instanceof String) return objects
-    return term => term
+    return term => {
+        const testFrom = (fromList, termCats) => {
+            let result
+            for (const sub of fromList) {
+                result = true
+                for (const single of sub) {
+                    if (!termCats.includes(single)) result = false
+                }
+                if (result) return true
+            }
+            return false
+        }
+        const testWith = (wth, termWiths) => {
+            return termWiths.includes(wth.select)
+        }
+        const genWith = (wth, term) => {
+            let chosen = []
+            for (const choose of wth.choose) {
+                chosen.push(Set.findProperty(choose, term))
+            }
+            return chosen
+        }
+        const generate = (generator, term) => {
+            switch (generator) {
+                case 'body': return {
+                    content: term.content,
+                    term
+                }
+                case 'category': return {
+                    content: term.categories[0], //TODO
+                    term
+                }
+            }
+        }
+
+        const st = set
+        const objs = objects
+        let generated = []
+
+        for (const obj in objs) {
+            for (const term in set.terms) {
+                if (testFrom(obj.from, term.categories) && testWith(obj.with, term.templates)) {
+                    for (const wth of obj.with) {
+                        generated.concat(
+                            genWith(wth, term)
+                                .map(a => { content: a, term })
+                        )
+                    }
+                    for (const gen of obj.generators) {
+                        generated.push(generate(gen, term))
+                    }
+                }
+            }
+        }
+        return generated
+    }
 }
 
 module.exports = {

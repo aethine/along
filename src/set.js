@@ -13,14 +13,26 @@ function readSet(path) {
                 _usedby: []
             }
         },
+        templates: {
+            temp1: {
+                prop1: '',
+                prop2: {
+                    prop3: ''
+                }
+            }
+        },
         terms: {
             term1: {
                 content: 'This is Term 1',
-                categories: ['cata']
+                categories: ['cata'],
+                templates: [],
+                properties: []
             },
             term2: {
                 content: 'This is term 2',
-                categories: ['cata', 'catc']
+                categories: ['cata', 'catc'],
+                templates: [],
+                properties: []
             }
         }
     }
@@ -97,8 +109,27 @@ function formatSet(set) {
     ${terms}
     `.trim()
 }
+function findProperty(property, term) {
+    const loop = (obj) => {
+        for (const key in obj) {
+            if (key == property) return obj[key]
+            else if (!(obj[key] instanceof String)) {
+                const result = findProperty(obj[key])
+                if (result) return result
+            }
+        }
+    }
+    for (const prop of term.properties) {
+        const result = loop(prop)
+        if (result) return result
+    }
+}
 
 module.exports = {
     read: readSet,
-    format: formatSet
+    format: formatSet,
+
+    findProperty,
+    findCategory,
+    parseSetPath
 }
